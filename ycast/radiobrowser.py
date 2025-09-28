@@ -12,7 +12,16 @@ from ycast.my_filter import check_station, begin_filter, end_filter, get_limit
 from ycast.generic import get_json_attr
 
 API_ENDPOINT = "http://all.api.radio-browser.info"
+import requests_cache
+
+API_ENDPOINT = "http://all.api.radio-browser.info"
+MINIMUM_COUNT_GENRE = 15
+MINIMUM_COUNT_COUNTRY = 5
+MINIMUM_COUNT_LANGUAGE = 5
+DEFAULT_STATION_LIMIT = 200
+SHOW_BROKEN_STATIONS = False
 ID_PREFIX = "RB"
+session = requests_cache.CachedSession('ycast_cache', backend='memory')
 
 station_cache = {}
 
@@ -58,7 +67,7 @@ def request(url):
     logging.debug("Radiobrowser API request: %s", url)
     headers = {'content-type': 'application/json', 'User-Agent': generic.USER_AGENT + '/' + __version__}
     try:
-        response = requests.get(API_ENDPOINT + '/json/' + url, headers=headers)
+        response = session.get(API_ENDPOINT + '/json/' + url, headers=headers)
     except requests.exceptions.ConnectionError as err:
         logging.error("Connection to Radiobrowser API failed (%s)", err)
         return {}
