@@ -3,6 +3,8 @@ import re
 
 import flask
 from flask import Flask, request, url_for, redirect, abort, make_response, render_template
+from apscheduler.schedulers.background import BackgroundScheduler
+import requests_cache
 
 import ycast.vtuner as vtuner
 import ycast.radiobrowser as radiobrowser
@@ -29,9 +31,29 @@ station_tracking = False
 app = Flask(__name__)
 
 
+def revalidate_cache():
+    logging.info("Starting cache revalidation")
+    session = requests_cache.CachedSession('ycast_cache', backend='memory')
+    get_urls = [
+        response.url for response in session.cache.responses.values()
+        if response.request.method == 'GET'
+    ]
+    session.cache.clear()
+    for url in get_urls[:25]:
+        session.get(url)
+    logging.info("Cache revalidated")
+
+
+sched = BackgroundScheduler(daemon=True)
+sched.add_job(revalidate_cache, 'interval', hours=6)
+sched.start()
+
+
 def run(config, address='0.0.0.0', port=8010):
     try:
         generic.set_stations_file(config)
+        revalidate_cache()
+        check_my_stations_feature(config)
         app.run(host=address, port=port)
     except PermissionError:
         logging.error("No permission to create socket. Are you trying to use ports below 1024 without elevated rights?")
