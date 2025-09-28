@@ -53,7 +53,6 @@ def run(config, address='0.0.0.0', port=8010):
     try:
         generic.set_stations_file(config)
         revalidate_cache()
-        check_my_stations_feature(config)
         app.run(host=address, port=port)
     except PermissionError:
         logging.error("No permission to create socket. Are you trying to use ports below 1024 without elevated rights?")
